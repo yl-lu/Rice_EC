@@ -89,7 +89,7 @@ phm <- pheatmap(df.cluster[,-1],
 #-----------------------------
 library(ggplot2)
 library(fields)
-setwd("C:/project-rice_elf3")
+setwd("C:/project-rice_EC")
 df <- read.table("clustering.originalTPM_correspondingWithRatio.8cluster_labels.xls", header = T, row.names = 1)
 mycolnames <- colnames(df)
 
@@ -258,8 +258,8 @@ dev.off()
 #---
 # extract gene sets after clustering WT_SD/WT_LD,
 # such as extract log2(TPM ratio) for each cluster in phyb_LD/WT_LD
-setwd("C:/project-rice_elf3")
-oridf <- read.table("Luis_SdLdTC_TPMmeans_new.csv",
+setwd("C:/project-rice_EC")
+oridf <- read.table("TPMmeans.csv",
                     header = T,
                     row.names = 1,
                     sep = ",")
@@ -352,7 +352,7 @@ phm <- pheatmap(allWT_SDminusLD[rownames(df.reorder),],
 )
 
 
-elf3BoundGenes <- read.table("C:/project-rice_elf3/ChIP-seq/ELF3.targetGenes.bed", header = F, row.names = 4, sep = "\t")
+elf3BoundGenes <- read.table("C:/project-rice_EC/ChIP-seq/ELF3.targetGenes.bed", header = F, row.names = 4, sep = "\t")
 df.cluster <- read.table("WT_log_SD-LD.plotOrder.xls", header = T,
                          row.names = 1, sep = "\t")
 df.cluster$clustersTree <- df.cluster$clustersTree + 1 
