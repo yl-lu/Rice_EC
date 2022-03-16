@@ -88,9 +88,8 @@ phm <- pheatmap(df.cluster[,-1],
 # line plot
 #-----------------------------
 library(ggplot2)
-# library(ggridges)
 library(fields)
-setwd("C:/project-rice_EC")
+setwd("C:/project-rice_elf3")
 df <- read.table("clustering.originalTPM_correspondingWithRatio.8cluster_labels.xls", header = T, row.names = 1)
 mycolnames <- colnames(df)
 
@@ -99,21 +98,23 @@ df <- data.frame(log2(df[,1:18]+1),
 colnames(df) <- mycolnames
 head(df)
 
-df.select <- read.table("select.geneID.clusters.geneSymbol.TPM.v3.xls",
+df.select <- read.table("select.geneID.clusters.geneSymbol.TPM.xls",
                         header = T, row.names = 1, sep = "\t")
+df.lux_ZT14_SD <- read.table("TPM_lux_ZT14_SD.txt",
+                             header = T, row.names = 1, sep = "\t")
+df.select$lux_ZT14_SD <- df.lux_ZT14_SD[df.select$gene_id,]
+
 df.select <- df.select[,-1]
 
-df.select <- data.frame(log2(df.select[,1:18]+1),
+df.select <- data.frame(log2(df.select[,c(1:18,20)]+1),
                         df.select$cluster)
-colnames(df.select) <- colnames(df)
+colnames(df.select) <- gsub("df.select.cluster","cluster",colnames(df.select))
 head(df.select)
 
 cluster <- NULL
 for (k in 1:8){
   cluster[[k]] <- df[df$cluster==(k-1),]
 }
-# genetab <- rbind(gene[[1]],gene[[2]])
-# merge(gene[[1]],gene[[2]], all.x = T)
 
 gene <- NULL
 p <- NULL
@@ -130,11 +131,14 @@ for (i in 1:length(df.select[,1])){
                                byrow = TRUE),
                         stringsAsFactors = FALSE)
   colnames(df.gene) <- c("Genotype","ZT","Day_length","TPM")
+  df.gene$Genotype <- gsub("elf3", "elf3-1 elf3-2", df.gene$Genotype)
+  df.gene <- subset(df.gene,df.gene$Genotype == "WT" |
+                            df.gene$Genotype == "elf3-1 elf3-2" |
+                            df.gene$Genotype == "lux")
   df.gene$TPM <- as.numeric(df.gene$TPM)
   df.gene$cluster <- rep(gene[[i]]$cluster,length(df.gene$TPM))
-  #df.gene$ZT <- factor(df.gene$ZT, levels = c("ZT06","ZT10","ZT14","ZT18"))
   df.gene$ZT <- as.integer(gsub("ZT","",df.gene$ZT))
-  df.gene$Genotype <- factor(df.gene$Genotype, levels = c("WT","phyb","elf3"))
+  df.gene$Genotype <- factor(df.gene$Genotype, levels = c("WT","phyb","elf3-1 elf3-2","lux"))
   df.gene$Day_length <- as.factor(df.gene$Day_length)
   df.gene$symbol <- rep(rownames(df.select[i,]),length(df.gene$TPM))
   
@@ -144,25 +148,17 @@ for (i in 1:length(df.select[,1])){
   mycluster <- cluster[[unique(df.gene$cluster)+1]]
   mysummary <- summary(mycluster)
   
-  df.gene$sd <- apply(mycluster,2,sd)[1:18]
-  df.gene$mean <- apply(mycluster,2,mean)[1:18]
-  df.gene$median<- apply(mycluster,2,median)[1:18]
-  df.gene$upperquartile <- as.numeric(gsub("1st Qu.:","",mysummary[2,][1:18]))
-  df.gene$lowerquartile <- as.numeric(gsub("3rd Qu.:","",mysummary[5,][1:18]))
-  # df.gene[19,] <- c("WT","ZT10","SD",NA,NA,rownames(df.select[i,]),NA,NA,NA,NA,NA)
-  # df.gene[20,] <- c("WT","ZT10","LD",NA,NA,rownames(df.select[i,]),NA,NA,NA,NA,NA)
-  # df.gene[21,] <- c("Elf3","ZT10","SD",NA,NA,rownames(df.select[i,]),NA,NA,NA,NA,NA)
-  # df.gene[22,] <- c("Elf3","ZT10","LD",NA,NA,rownames(df.select[i,]),NA,NA,NA,NA,NA)
-  # df.gene[23,] <- c("Phyb","ZT10","SD",NA,NA,rownames(df.select[i,]),NA,NA,NA,NA,NA)
-  # df.gene[24,] <- c("Phyb","ZT10","LD",NA,NA,rownames(df.select[i,]),NA,NA,NA,NA,NA)
-  # library(tidyverse)
-  # huron <- data.frame(year = 1875:1972, 
-  #                     level = LakeHuron)
-  # ggplot(huron, aes(year, level)) + 
-  #   geom_ribbon(aes(ymin = level - 1, ymax = level + 1), fill = "steelblue2") + 
-  #   geom_line(color = "firebrick", size = 1)
-  #, aes(x = ZT, y = TPM, color = Day_length)
+  df.gene$sd <- apply(mycluster,2,sd)[1:length(rownames(df.gene))]
+  df.gene$mean <- apply(mycluster,2,mean)[1:length(rownames(df.gene))]
+  df.gene$median<- apply(mycluster,2,median)[1:length(rownames(df.gene))]
+  df.gene$upperquartile <- as.numeric(gsub("1st Qu.:","",mysummary[2,][1:length(rownames(df.gene))]))
+  df.gene$lowerquartile <- as.numeric(gsub("3rd Qu.:","",mysummary[5,][1:length(rownames(df.gene))]))
+
   p[[i]] <- ggplot(df.gene) +
+    geom_point(aes(x = ZT, y = TPM,
+                   color = Day_length,
+                   group = Day_length),
+               size = 1.5) +
     geom_ribbon(aes(x = ZT, y = TPM,
                     ymin = median-sd, ymax = median+sd,
                     alpha = 0.02,
@@ -179,7 +175,6 @@ for (i in 1:length(df.select[,1])){
     scale_x_continuous(breaks = c(6,14,18),
                        labels = c("6","14","18"),
                        position = 'bottom') +
-    #ylim(0,3) + 
     theme(axis.text.x = element_text(size = 21,
                                      color = "black",
                                      face = "plain",
@@ -222,16 +217,11 @@ for (i in 1:length(df.select[,1])){
 multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
   library(grid)
   
-  # Make a list from the ... arguments and plotlist
   plots <- c(list(...), plotlist)
   
   numPlots = length(plots)
   
-  # If layout is NULL, then use 'cols' to determine layout
   if (is.null(layout)) {
-    # Make the panel
-    # ncol: Number of columns of plots
-    # nrow: Number of rows needed, calculated from # of cols
     layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
                      ncol = cols, nrow = ceiling(numPlots/cols))
   }
@@ -240,13 +230,10 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
     print(plots[[1]])
     
   } else {
-    # Set up the page
     grid.newpage()
     pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
     
-    # Make each plot, in the correct location
     for (i in 1:numPlots) {
-      # Get the i,j matrix positions of the regions that contain this subplot
       matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
       
       print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
@@ -254,24 +241,19 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
     }
   }
 }
-pdf("lineplots.WT_phyb.selectedGenes.pdf", width = 8, height = length(rownames(df.select))*(30/11))
+pdf("lineplots.WT_elf3-1elf3-2_lux.selectedGenes.pdf", width = 5, height = length(rownames(df.select))*(20/11))
 multiplot(p[[1]],p[[2]],p[[3]],
           p[[4]],p[[5]],p[[6]],
           p[[7]],p[[8]],p[[9]],
-          p[[10]],p[[11]],
+          p[[10]],p[[11]],p[[12]],
+          p[[13]],p[[14]],p[[15]],
+          p[[16]],p[[17]],p[[18]],
+          p[[19]],p[[20]],p[[21]],
+          p[[22]],p[[23]],p[[24]],
+          p[[25]],p[[26]],p[[27]],
+          p[[28]],
           cols = 1)
 dev.off()
-
-# pdf("lineplots.WT_phyb.selectedGenes.multiPages.pdf", width = 8, height = 3*30/11)
-# multiplot(p[[1]],p[[2]],p[[3]], cols = 1)
-# multiplot(p[[4]],p[[5]],p[[6]], cols = 1)
-# multiplot(p[[7]],p[[8]],p[[9]], cols = 1)
-# multiplot(p[[10]],p[[11]],p[[12]], cols = 1)
-# multiplot(p[[13]],p[[14]],p[[15]], cols = 1)
-# multiplot(p[[16]],p[[17]],p[[18]], cols = 1)
-# multiplot(p[[19]],p[[20]],p[[21]], cols = 1)
-# multiplot(p[[22]],p[[23]],p[[24]], cols = 1)
-# dev.off()
 
 #---
 # extract gene sets after clustering WT_SD/WT_LD,
@@ -343,13 +325,10 @@ colnames(df.reorder) <- c("Cluster","if_bound")
 head(df.reorder)
 head(allWT_SDminusLD)
 phm <- pheatmap(allWT_SDminusLD[rownames(df.reorder),],
-                #color = colorRampPalette(c("deepskyblue3","white","red2"))(200),
                 color = colorRampPalette(c("#c1207e","snow","#669900"))(200),
                 border_color = "snow",
-                #scale = "row",
                 cluster_rows = F,
                 cluster_cols = F,                
-                #clustering_distance_rows = "euclidean",
                 clustering_distance_rows = "correlation",
                 clustering_method = "ward.D",                      
                 treeheight_row = 30, 
@@ -363,8 +342,6 @@ phm <- pheatmap(allWT_SDminusLD[rownames(df.reorder),],
                 annotation_colors = my_colors,
                 annotation_row = my_gene_clusters,
                 annotation_legend = T,
-                #legend_breaks = c(0,1),
-                #legend_labels = c("low","high"),
                 labels_col = c("ZT0","ZT2","ZT6",
                                "ZT10","ZT14","ZT18"),
                 annotation_names_row = T,                  
@@ -390,9 +367,6 @@ my_colors <- list(cluster = colorsVec)
 elf3BoundGenesClusters <- read.table("ELF3-bound_genes_clusters_sort.xls", header = F, row.names = 1)
 colnames(elf3BoundGenesClusters) <- c("Cluster","if_bound")
 elf3BoundGenesClusters$Cluster <- 0
-# elf3BoundGenesClusters <- cbind(df.cluster[rownames(elf3BoundGenes),]$clustersTree,
-#                                 df.cluster[-which(rownames(df.cluster) %in% rownames(elf3BoundGenes)),]$clustersTree)
-# elf3BoundGenesClusters <- elf3BoundGenesClusters[,-which(colnames(elf3BoundGenesClusters) %in% c("cluster"))]
 head(elf3BoundGenesClusters[,-1])
 phm <- pheatmap(elf3BoundGenesClusters,
                 color = colorRampPalette(c("white","black"))(2),
@@ -409,7 +383,6 @@ phm <- pheatmap(elf3BoundGenesClusters,
                 annotation_colors = my_colors,
                 annotation_row = my_gene_clusters,
                 annotation_legend = T,
-                #labels_col = c("ZT6","ZT14","ZT18"),
                 annotation_names_row = T,                  
                 annotation_names_col = T,
                 show_rownames = F,
