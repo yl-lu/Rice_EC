@@ -6,9 +6,9 @@ library(grid)
 library(amap)
 library(RColorBrewer)
 
-setwd("C:/project-rice_elf3")
+setwd("C:/project-rice_EC")
 
-oridf <- read.table("Luis_SdLdTC_TPMmeans_new.csv",
+oridf <- read.table("TPMmeans.csv",
                  header = T,
                  row.names = 1,
                  sep = ",")
@@ -90,7 +90,7 @@ phm <- pheatmap(df.cluster[,-1],
 library(ggplot2)
 # library(ggridges)
 library(fields)
-setwd("C:/project-rice_elf3")
+setwd("C:/project-rice_EC")
 df <- read.table("clustering.originalTPM_correspondingWithRatio.8cluster_labels.xls", header = T, row.names = 1)
 mycolnames <- colnames(df)
 
@@ -175,9 +175,9 @@ for (i in 1:length(df.select[,1])){
               size = 1.5) +
     scale_color_manual(values = c("red2","deepskyblue3")) +
     scale_fill_manual(values = c("lightcoral","lightskyblue")) +
-    facet_wrap(~Genotype, scales = "free") +
+    facet_wrap(~Genotype, scales = "fixed") +
     scale_x_continuous(breaks = c(6,14,18),
-                       labels = c("ZT06","ZT14","ZT18"),
+                       labels = c("6","14","18"),
                        position = 'bottom') +
     #ylim(0,3) + 
     theme(axis.text.x = element_text(size = 21,
